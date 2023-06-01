@@ -11,12 +11,19 @@ rcParams['font.family'] = 'Arial'
 rcParams['pdf.fonttype'] = 42
 rcParams['ps.fonttype'] = 42
 
-def emg_preprocessing(trial_emg):
+def emg_preprocessing(trial_emg, EMG_names):
     """
     Function to clip and normalize each channel of EMG envelopes
     :param trial_emg: list of lists containing EMG envelopes for each successful trial
     :return: list of lists containing the pre-processed EMG envelopes for each successful trial
     """
+    
+    # First, keep EMG channels that are good across all recorded sessions
+    EMG_names_good = ['EMG_ECRb', 'EMG_ECRl', 'EMG_ECU', 'EMG_EDCr', 'EMG_FCR', 'EMG_FCU', 'EMG_FDP'] 
+    idx_emg = [EMG_names.index(x) for x in EMG_names_good]
+    for trial, val_trial in enumerate(trial_emg):
+        trial_emg[trial] = val_trial[:, idx_emg]
+    
     trial_emg_np = np.concatenate(trial_emg)
 
     # EMG clipping
@@ -31,7 +38,7 @@ def emg_preprocessing(trial_emg):
     for i, val in enumerate(trial_emg):
         trial_emg[i] = (val - trial_emg_np_baseline) / trial_emg_np_max
 
-    return trial_emg
+    return trial_emg, EMG_names_good
 
 def spike_preprocessing(unit_names1, unit_names2, spike1, spike2):
     """
@@ -121,7 +128,15 @@ def plot_actual_and_pred_EMG(fig_title, spike, EMG, decoder, bin_size, n_lags, n
         plt.text(150, 0.9*ylim, str(r2_list[i])[:4], fontsize = 12, color = color)
     plt.tight_layout()
     
-
+def list_to_nparray(X):
+    """
+    This function converts a list of np.array (each array is a single-trial) into a single np.array where trials are concatenated
+    """
+    n_col = np.size(X[0],1)
+    Y = np.empty((0, n_col))
+    for each in X:
+        Y = np.vstack((Y, each))
+    return Y
 
 
 
